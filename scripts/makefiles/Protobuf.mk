@@ -28,10 +28,10 @@ PROTO_GEN=internal/proto-gen
 PATCHED_OTEL_PROTO_DIR = $(PROTO_GEN)/.patched-otel-proto
 
 PROTO_INCLUDES := \
-	-Iidl/proto/api_v2 \
+	-Ithird_party/jaeger-idl/proto/api_v2 \
 	-Iinternal/proto/metrics \
 	-I/usr/include/github.com/gogo/protobuf \
-	-Iidl/opentelemetry-proto
+	-Ithird_party/opentelemetry-proto
 
 # Remapping of std types to gogo types (must not contain spaces)
 PROTO_GOGO_MAPPINGS := $(shell echo \
@@ -46,8 +46,8 @@ PROTO_GOGO_MAPPINGS := $(shell echo \
 
 OPENMETRICS_PROTO_FILES=$(wildcard internal/proto/metrics/*.proto)
 
-# The source directory for OTLP Protobufs from the sub-sub-module.
-OTEL_PROTO_SRC_DIR=idl/opentelemetry-proto/opentelemetry/proto
+# The source directory for OTLP Protobufs
+OTEL_PROTO_SRC_DIR=third_party/opentelemetry-proto/opentelemetry/proto
 
 # Find all OTEL .proto files, remove leading path (only keep relevant namespace dirs).
 OTEL_PROTO_FILES=$(subst $(OTEL_PROTO_SRC_DIR)/,,\
@@ -99,9 +99,9 @@ API_V2_PATCHED_DIR=$(PROTO_GEN)/.patched/api_v2
 .PHONY: patch-api-v2
 patch-api-v2:
 	mkdir -p $(API_V2_PATCHED_DIR)
-	cp idl/proto/api_v2/collector.proto $(API_V2_PATCHED_DIR)/
-	cp idl/proto/api_v2/sampling.proto $(API_V2_PATCHED_DIR)/
-	cat idl/proto/api_v2/query.proto | $(SED) 's|jaegertracing/jaeger-idl/model/v1.|jaegertracing/jaeger/model.|g' > $(API_V2_PATCHED_DIR)/query.proto
+	cp third_party/jaeger-idl/proto/api_v2/collector.proto $(API_V2_PATCHED_DIR)/
+	cp third_party/jaeger-idl/proto/api_v2/sampling.proto $(API_V2_PATCHED_DIR)/
+	cat third_party/jaeger-idl/proto/api_v2/query.proto | $(SED) 's|jaegertracing/jaeger-idl/model/v1.|jaegertracing/jaeger/model.|g' > $(API_V2_PATCHED_DIR)/query.proto
 
 
 .PHONY: proto-openmetrics
@@ -117,10 +117,10 @@ STORAGE_V2_PATCHED_DEPENDENCY=$(STORAGE_V2_PATCHED_DIR)/dependency_storage.proto
 .PHONY: patch-storage-v2
 patch-storage-v2:
 	mkdir -p $(STORAGE_V2_PATCHED_DIR)
-	cat idl/proto/storage/v2/trace_storage.proto | \
+	cat third_party/jaeger-idl/proto/storage/v2/trace_storage.proto | \
 		$(SED) -f ./$(PROTO_GEN)/patch.sed \
 		> $(STORAGE_V2_PATCHED_TRACE)
-	cat idl/proto/storage/v2/dependency_storage.proto | \
+	cat third_party/jaeger-idl/proto/storage/v2/dependency_storage.proto | \
 		$(SED) -f ./$(PROTO_GEN)/patch.sed \
 		> $(STORAGE_V2_PATCHED_DEPENDENCY)
 
@@ -139,7 +139,7 @@ proto-hotrod:
 
 .PHONY: proto-zipkin
 proto-zipkin:
-	$(call proto_compile, $(PROTO_GEN)/zipkin, idl/proto/zipkin.proto, -Iidl/proto)
+	$(call proto_compile, $(PROTO_GEN)/zipkin, third_party/jaeger-idl/proto/zipkin.proto, -Ithird_party/jaeger-idl/proto)
 
 # The API v3 service uses official OTEL type opentelemetry.proto.trace.v1.TracesData,
 # which at runtime is mapped to a custom type in cmd/jaeger/internal/extension/jaegerquery/internal/internal/api_v3/traces.go
@@ -153,13 +153,13 @@ API_V3_PATCHED=$(API_V3_PATCHED_DIR)/query_service.proto
 .PHONY: patch-api-v3
 patch-api-v3:
 	mkdir -p $(API_V3_PATCHED_DIR)
-	cat idl/proto/api_v3/query_service.proto | \
+	cat third_party/jaeger-idl/proto/api_v3/query_service.proto | \
 		$(SED) -f ./$(PROTO_GEN)/patch.sed \
 		> $(API_V3_PATCHED)
 
 .PHONY: proto-api-v3
 proto-api-v3: patch-api-v3
-	$(call proto_compile, $(API_V3_PATH), $(API_V3_PATCHED), -I$(API_V3_PATCHED_DIR) -Iidl/opentelemetry-proto -I/gnostic -I/gnostic/gnostic,, $(PROTOC_WITH_GNOSTIC))
+	$(call proto_compile, $(API_V3_PATH), $(API_V3_PATCHED), -I$(API_V3_PATCHED_DIR) -Ithird_party/opentelemetry-proto -I/gnostic -I/gnostic/gnostic,, $(PROTOC_WITH_GNOSTIC))
 	@echo "🏗️  replace first instance of OTEL import with internal type"
 	$(SED) -i '0,/go.opentelemetry.io\/proto\/otlp\/trace\/v1/s|go.opentelemetry.io/proto/otlp/trace/v1|github.com/jaegertracing/jaeger/internal/jptrace|' $(API_V3_PATH)/query_service.pb.go
 	@echo "🏗️  remove all remaining OTEL imports because we're not using any other OTLP types"

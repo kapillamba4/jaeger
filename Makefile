@@ -30,6 +30,7 @@ ALL_SRC = $(shell find . -name '*.go' \
 				   -not -name '*.pb.go' \
 				   -not -path './vendor/*' \
 				   -not -path './idl/*' \
+				   -not -path './third_party/*' \
 				   -not -path './internal/tools/*' \
 				   -not -path './scripts/build/docker/debug/*' \
 				   -not -path '*/mocks/*' \
@@ -39,7 +40,7 @@ ALL_SRC = $(shell find . -name '*.go' \
 # All tracked file types that should carry copyright and SPDX license headers.
 LIST_LICENSE_SRC = git ls-files \
 						'*.go' '*.js' '*.mk' '*.py' '*.sh' '*.ts' '*.yaml' '*.yml' 'Dockerfile*' 'Makefile*' | \
-						grep -vE '^(vendor/|idl/|jaeger-ui/|internal/proto-gen/|scripts/build/docker/debug/|python-sidecar/\.venv/|.*(^|/)mocks/|.*_mock\.go$$|.*\.pb\.go$$)' | \
+						grep -vE '^(vendor/|idl/|jaeger-ui/|third_party/|internal/proto-gen/|scripts/build/docker/debug/|python-sidecar/\.venv/|.*(^|/)mocks/|.*_mock\.go$$|.*\.pb\.go$$)' | \
 						sort
 
 # All .sh or .py or Makefile or .mk files that should be auto-formatted and linted.
@@ -48,6 +49,7 @@ SCRIPTS_SRC = $(shell find . \( -name '*.sh' -o -name '*.py' -o -name '*.mk' -o 
 						-not -path './vendor/*' \
 						-not -path './idl/*' \
 						-not -path './jaeger-ui/*' \
+						-not -path './third_party/*' \
 						-type f | \
 					sort)
 
